@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Team Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0f;
+    color: #c8c8d0;
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 13px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1e1e2e;
+    background: #0e0e16;
+    flex-shrink: 0;
+  }
+
+  .header h1 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ef4444;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .header-info {
+    display: flex;
+    gap: 32px;
+    font-size: 12px;
+    color: #888;
+  }
+
+  .header-info span { color: #c8c8d0; }
+
+  .secret-value {
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .secret-value.hidden { color: #444; }
+  .secret-value.revealed { color: #22c55e; }
+
+  .agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .agent-card {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #1e1e2e;
+    overflow: hidden;
+  }
+
+  .agent-card:last-child { border-right: none; }
+
+  .agent-card.status-success { border-top: 2px solid #22c55e; }
+  .agent-card.status-failed { border-top: 2px solid #ef4444; }
+  .agent-card.status-cancelled { border-top: 2px solid #555; }
+  .agent-card.status-running { border-top: 2px solid #f59e0b; }
+
+  .agent-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #1e1e2e;
+    background: #0e0e16;
+    flex-shrink: 0;
+  }
+
+  .agent-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #e0e0e8;
+  }
+
+  .agent-model {
+    font-size: 11px;
+    color: #666;
+    margin-top: 2px;
+  }
+
+  .agent-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .status-running .status-dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+  .status-running { color: #f59e0b; }
+  .status-success .status-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+  .status-success { color: #22c55e; }
+  .status-failed .status-dot { background: #ef4444; }
+  .status-failed { color: #ef4444; }
+  .status-cancelled .status-dot { background: #555; }
+  .status-cancelled { color: #888; }
+
+  .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: #1a1a2a;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .status-running .progress-fill { background: #f59e0b; }
+  .status-success .progress-fill { background: #22c55e; }
+  .status-failed .progress-fill { background: #ef4444; }
+  .status-cancelled .progress-fill { background: #555; }
+
+  .progress-text {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+  }
+
+  .last-action {
+    font-size: 11px;
+    color: #555;
+    margin-top: 4px;
+  }
+
+  .agent-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .thinking-box {
+    padding: 10px 16px;
+    border-bottom: 1px solid #1e1e2e;
+    flex-shrink: 0;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+
+  .thinking-box .label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #7c3aed;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+
+  .thinking-box .text {
+    font-size: 12px;
+    color: #9590b0;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .conversation-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .conversation-box .label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #2563eb;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 16px 8px;
+  }
+
+  .msg {
+    padding: 4px 16px;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  .msg-user {
+    color: #e0e0e8;
+  }
+
+  .msg-user::before {
+    content: "\2192 ";
+    color: #f59e0b;
+  }
+
+  .msg-assistant {
+    color: #7a7a90;
+  }
+
+  .msg-assistant::before {
+    content: "\2190 ";
+    color: #6366f1;
+  }
+
+  .connecting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    color: #555;
+    font-size: 14px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .status-running .status-dot {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .win-banner {
+    display: none;
+    padding: 12px 24px;
+    background: #052e16;
+    border-bottom: 1px solid #22c55e33;
+    text-align: center;
+    font-size: 13px;
+    color: #22c55e;
+    font-weight: 600;
+  }
+
+  .win-banner.visible { display: block; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Red Team Dashboard</h1>
+    <div class="header-info">
+      <div>Target: <span id="target-model">--</span></div>
+      <div>Secret: <span id="secret-display" class="secret-value hidden">--------</span></div>
+      <div>Elapsed: <span id="elapsed">0s</span></div>
+    </div>
+  </div>
+  <div id="win-banner" class="win-banner"></div>
+  <div id="agents-grid" class="agents-grid"></div>
+  <div id="connecting" class="connecting">Connecting...</div>
+
+<script>
+  let state = null;
+  let ws = null;
+  let startTime = null;
+
+  function connect() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${proto}//${location.host}/ws`);
+
+    ws.onopen = () => {
+      document.getElementById('connecting').style.display = 'none';
+    };
+
+    ws.onmessage = (e) => {
+      state = JSON.parse(e.data);
+      if (!startTime) startTime = Date.now() - state.elapsed;
+      render();
+    };
+
+    ws.onclose = () => {
+      document.getElementById('connecting').style.display = 'flex';
+      setTimeout(connect, 1000);
+    };
+  }
+
+  function formatElapsed(ms) {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function truncate(str, max) {
+    if (!str) return '';
+    return str.length > max ? str.slice(0, max) + '...' : str;
+  }
+
+  function render() {
+    if (!state) return;
+
+    document.getElementById('target-model').textContent = state.targetModel;
+
+    const secretEl = document.getElementById('secret-display');
+    if (state.secret) {
+      secretEl.textContent = state.secret;
+      secretEl.className = 'secret-value revealed';
+    } else {
+      secretEl.textContent = '\u2588'.repeat(8);
+      secretEl.className = 'secret-value hidden';
+    }
+
+    const elapsed = startTime ? Date.now() - startTime : state.elapsed;
+    document.getElementById('elapsed').textContent = formatElapsed(elapsed);
+
+    const banner = document.getElementById('win-banner');
+    if (state.winningAgent) {
+      banner.textContent = `${state.winningAgent} extracted the secret: ${state.secret}`;
+      banner.className = 'win-banner visible';
+    } else {
+      banner.className = 'win-banner';
+    }
+
+    const grid = document.getElementById('agents-grid');
+
+    // Build or update agent cards
+    if (grid.children.length !== state.agents.length) {
+      grid.innerHTML = '';
+      for (const agent of state.agents) {
+        const card = document.createElement('div');
+        card.id = `agent-${agent.id}`;
+        card.className = `agent-card status-${agent.status}`;
+        grid.appendChild(card);
+      }
+    }
+
+    for (const agent of state.agents) {
+      const card = document.getElementById(`agent-${agent.id}`);
+      if (!card) continue;
+      card.className = `agent-card status-${agent.status}`;
+
+      const pct = Math.round((agent.n_actions / agent.maxActions) * 100);
+
+      card.innerHTML = `
+        <div class="agent-header">
+          <div class="agent-name">${escapeHtml(agent.id)}</div>
+          <div class="agent-model">${escapeHtml(agent.model)}</div>
+          <div class="agent-meta">
+            <div class="status-badge status-${agent.status}">
+              <span class="status-dot"></span>
+              ${agent.status.toUpperCase()}
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="progress-text">${agent.n_actions}/${agent.maxActions}</div>
+          </div>
+          <div class="last-action">${agent.lastAction ? 'last: ' + escapeHtml(agent.lastAction) : ''}</div>
+        </div>
+        <div class="agent-body">
+          <div class="thinking-box">
+            <div class="label">Thinking</div>
+            <div class="text">${escapeHtml(truncate(agent.lastThinking, 500)) || '(waiting...)'}</div>
+          </div>
+          <div class="conversation-box">
+            <div class="label">Conversation</div>
+            ${agent.conversation.map(m => `
+              <div class="msg msg-${m.role}">
+                ${escapeHtml(truncate(m.content, 300))}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+
+      // Auto-scroll conversation to bottom
+      const convoBox = card.querySelector('.conversation-box');
+      if (convoBox) convoBox.scrollTop = convoBox.scrollHeight;
+    }
+  }
+
+  // Update elapsed timer
+  setInterval(() => {
+    if (startTime && state && !state.stopped) {
+      document.getElementById('elapsed').textContent = formatElapsed(Date.now() - startTime);
+    }
+  }, 1000);
+
+  connect();
+</script>
+</body>
+</html>
