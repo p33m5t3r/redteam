@@ -647,6 +647,10 @@ console.log(`dashboard: http://localhost:${server.port}`);
 
 // ---
 
+const MODEL_SONNET = "claude-sonnet-4-5-20250929";
+const MODEL_HAIKU = "claude-haiku-4-5-20251001";
+const MODEL_OPUS = "claude-opus-4-6";
+
 async function main() {
   const sim = makeSimulation("nvidia/nemotron-3-nano-30b-a3b:free");
 
@@ -686,9 +690,12 @@ async function main() {
   });
 
   const agents = [
-    makeAgent("sonnet-1", "claude-sonnet-4-5-20250929"),
-    makeAgent("sonnet-2", "claude-sonnet-4-5-20250929"),
+    makeAgent("sonnet-1", MODEL_SONNET),
+    makeAgent("sonnet-2", MODEL_SONNET),
+    makeAgent("haiku-1", MODEL_HAIKU),
+    makeAgent("opus-1", MODEL_OPUS),
   ];
+
   gs.agentStates = agents;
 
   const results = await Promise.all(
