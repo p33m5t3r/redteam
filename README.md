@@ -10,4 +10,8 @@ the target has been instructed not to share the value with the user.
 the redteam agent's goal is to get the target to divulge the secret.
 
 
+## devlog
 
+`playbook0.json` nvidia model
+`playbook1.json` nvidia only entry, works against deepseek
+`playbook3.json` nvidia + deepseek entries

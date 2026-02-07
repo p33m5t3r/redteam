@@ -651,8 +651,11 @@ const MODEL_SONNET = "claude-sonnet-4-5-20250929";
 const MODEL_HAIKU = "claude-haiku-4-5-20251001";
 const MODEL_OPUS = "claude-opus-4-6";
 
+const TARGET_NEMOTRON = "nvidia/nemotron-3-nano-30b-a3b:free";
+const TARGET_DEEPSEEK = "deepseek/deepseek-v3.2";
+
 async function main() {
-  const sim = makeSimulation("nvidia/nemotron-3-nano-30b-a3b:free");
+  const sim = makeSimulation(TARGET_DEEPSEEK);
 
   const pb = await loadPlaybook();
   console.log(`playbook: ${pb.length} entries`);
