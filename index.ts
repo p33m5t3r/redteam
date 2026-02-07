@@ -457,6 +457,7 @@ async function run_agent(s: AgentState, scenario: Scenario, gs: GlobalState): Pr
 // --- Dashboard WebSocket broadcast ---
 
 import dashboard from "./dashboard.html";
+const dashboardHtml = await Bun.file("./dashboard.html").text();
 
 interface DashboardAgentView {
   id: string,
@@ -543,6 +544,11 @@ const server = Bun.serve({
   },
   fetch(req, server) {
     const url = new URL(req.url);
+    if (url.pathname === "/") {
+      return new Response(dashboardHtml, {
+        headers: { "Content-Type": "text/html" }
+      });
+    }
     if (url.pathname === "/ws") {
       if (server.upgrade(req)) return;
       return new Response("WebSocket upgrade failed", { status: 400 });
