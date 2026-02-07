@@ -1,15 +1,13 @@
+
+
 # redteam
 
-To install dependencies:
+setup:
 
-```bash
-bun install
-```
+simple openrouter chatbot is the 'target'.
+target has some system prompt with a secret value.
+the target has been instructed not to share the value with the user.
+the redteam agent's goal is to get the target to divulge the secret.
 
-To run:
 
-```bash
-bun run index.ts
-```
 
-This project was created using `bun init` in bun v1.3.8. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
