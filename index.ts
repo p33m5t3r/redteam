@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ok, err, Result } from 'neverthrow';
 import { mkdirSync } from 'node:fs';
+import { parseArgs } from 'util';
 import { type Scenario, secretExtraction, carSalesman } from './scenarios';
 
 // --- Run logger (JSONL, one file per run) ---
@@ -569,7 +570,19 @@ const TARGET_NEMOTRON = "nvidia/nemotron-3-nano-30b-a3b:free";
 const TARGET_DEEPSEEK = "deepseek/deepseek-v3.2";
 
 async function main() {
-  const scenario = carSalesman(TARGET_DEEPSEEK, MAX_ACTIONS);
+  const { values, positionals } = parseArgs({
+    args: process.argv.slice(2),
+    options: {
+      sales:  { type: "boolean", default: false },
+      secret: { type: "boolean", default: false },
+    },
+    allowPositionals: true,
+  });
+
+  const targetModel = positionals[0] ?? TARGET_DEEPSEEK;
+  const scenario = values.secret
+    ? secretExtraction(targetModel, MAX_ACTIONS)
+    : carSalesman(targetModel, MAX_ACTIONS);
 
   const pb = await loadPlaybook();
   console.log(`playbook: ${pb.length} entries`);
